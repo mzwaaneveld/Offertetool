@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offertetool – demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #E9EDF1;
+    --surface: #FFFFFF;
+    --input: #F6F8FA;
+    --ink: #16212C;
+    --muted: #5A6977;
+    --line: #CBD3DB;
+    --accent: #0E5A6B;
+    --on-accent: #FFFFFF;
+    --accent-soft: #D7E8EC;
+    --shared: #5B4BA0;
+    --shared-soft: #E6E2F4;
+    --concept: #8A5200;
+    --concept-soft: #F6E9D2;
+    --warn: #A3322A;
+    --warn-soft: #F6DEDB;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #0F161C;
+      --surface: #17212A;
+      --input: #1E2A35;
+      --ink: #E3E9EE;
+      --muted: #93A3B1;
+      --line: #2C3946;
+      --accent: #5FB7C9;
+      --on-accent: #0B1A1F;
+      --accent-soft: #16353D;
+      --shared: #B3A6F0;
+      --shared-soft: #2A2545;
+      --concept: #E8B05C;
+      --concept-soft: #3A2C14;
+      --warn: #F0948A;
+      --warn-soft: #3F1F1C;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 "Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+  header.top { padding-top: 28px; }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.015em; margin: 0; }
+  h2 { font-size: 18px; font-weight: 700; margin: 0 0 10px; }
+  .demo-note { color: var(--muted); margin: 6px 0 0; max-width: 72ch; }
+  .demo-note strong { color: var(--concept); font-weight: 600; }
+
+  .settings {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 20px;
+  }
+  .field > span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  select, input[type="text"], input[type="number"] {
+    font: inherit; color: inherit; width: 100%;
+    background: var(--input); border: 1px solid var(--line); border-radius: 7px;
+    padding: 6px 8px;
+  }
+  input[type="number"] { font-variant-numeric: tabular-nums; }
+  input[type="checkbox"] { accent-color: var(--accent); width: 17px; height: 17px; margin: 0; flex: none; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg label { flex: 1; position: relative; cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .seg span { display: block; text-align: center; padding: 6px 8px; background: var(--input); }
+  .seg input:checked + span { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+  main.wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 370px;
+    gap: 24px;
+    margin-top: 24px;
+    padding-bottom: 56px;
+  }
+  @media (max-width: 920px) {
+    main.wrap { grid-template-columns: 1fr; }
+    .summary { position: static !important; }
+  }
+
+  .notice {
+    background: var(--warn-soft); color: var(--warn);
+    padding: 10px 14px; border-radius: 8px; margin-bottom: 10px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .proc { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; }
+  .proc.is-on { border-left: 4px solid var(--accent); }
+  .row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap; }
+  .row label.check { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; min-width: 200px; }
+  .proc-row .name { font-weight: 700; font-size: 16px; }
+  .module { font-size: 13px; color: var(--muted); }
+  .kids { list-style: none; margin: 0; padding: 0 0 6px; }
+  .kid > .row { padding-top: 5px; padding-bottom: 5px; }
+  .kid.is-off .name { color: var(--muted); }
+  .tag {
+    font-size: 12px; line-height: 1.6; padding: 0 8px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); white-space: nowrap;
+  }
+  .tag.concept { background: var(--concept-soft); color: var(--concept); border-color: transparent; }
+  .tag.shared { background: var(--shared-soft); color: var(--shared); border-color: transparent; }
+  .days { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 72px; text-align: right; }
+  .days.counted { font-weight: 400; color: var(--muted); font-size: 13px; }
+  .reason { font-size: 13px; color: var(--warn); }
+  .linkbtn {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    font: inherit; font-size: 13px; color: var(--accent); text-decoration: underline;
+  }
+  .btn {
+    font: inherit; font-size: 14px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    padding: 6px 12px; border-radius: 7px;
+  }
+  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+  .btn.small { font-size: 13px; padding: 3px 10px; }
+  .inline-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 2px 14px 10px; }
+  .inline-form input { max-width: 380px; }
+  .questions { display: flex; gap: 16px; flex-wrap: wrap; padding: 0 14px 10px 41px; }
+  .questions .field { min-width: 200px; }
+
+  .breakdown { padding: 0 14px 10px; overflow-x: auto; }
+  .breakdown table { border-collapse: collapse; width: 100%; font-size: 13px; background: var(--input); border-radius: 8px; }
+  .breakdown th, .breakdown td { text-align: left; padding: 5px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .breakdown th { color: var(--muted); font-weight: 500; }
+  .breakdown td.num, .breakdown th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .breakdown tr:last-child td { border-bottom: 0; font-weight: 600; }
+  .capped { color: var(--warn); }
+
+  section.block { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 18px; }
+  .mw { width: 100%; border-collapse: collapse; }
+  .mw th { text-align: left; font-size: 13px; color: var(--muted); font-weight: 500; padding: 4px 6px; }
+  .mw td { padding: 4px 6px; vertical-align: middle; }
+  .mw td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mw-wrap { overflow-x: auto; }
+  .empty { color: var(--muted); margin: 0 0 10px; }
+
+  .summary {
+    position: sticky; top: 16px; align-self: start;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px;
+  }
+  .total-days { font-size: 44px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .total-amount { font-size: 20px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .lines { margin: 16px 0 0; padding: 0; list-style: none; }
+  .lines li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .lines li .val { font-variant-numeric: tabular-nums; text-align: right; }
+  .lines li.strong { font-weight: 700; }
+  .bar { grid-column: 1 / -1; height: 5px; background: var(--accent-soft); border-radius: 3px; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .compare { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  .compare th, .compare td { padding: 4px 4px; text-align: right; font-variant-numeric: tabular-nums; }
+  .compare th:first-child, .compare td:first-child { text-align: left; }
+  .compare th { color: var(--muted); font-weight: 500; }
+  .compare tr.current td { font-weight: 700; color: var(--accent); }
+  .summary h3 { font-size: 14px; margin: 18px 0 0; }
+  .flags { margin-top: 14px; font-size: 13px; display: grid; gap: 6px; }
+  .summary .btn { width: 100%; margin-top: 16px; }
+  footer { color: var(--muted); font-size: 13px; padding-bottom: 32px; }
+
+  #report { display: none; }
+  @media print {
+    body { background: #fff; color: #000; }
+    body > *:not(#report) { display: none !important; }
+    #report { display: block; font-size: 12px; }
+    #report table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    #report th, #report td { border-bottom: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+    #report td.num, #report th.num { text-align: right; }
+    #report h1 { font-size: 20px; }
+    #report h2 { font-size: 14px; margin: 16px 0 6px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bar > span { transition: width .25s ease; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+  <h1>Offertetool</h1>
+  <p class="demo-note"><strong>Demoversie voor beeldvorming.</strong> Alle processen, onderdelen, basisdagen, factoren en tarieven zijn voorbeeldwaarden. Er wordt niets opgeslagen.</p>
+  <div class="settings" id="settings"></div>
+</header>
+
+<main class="wrap">
+  <div>
+    <div id="tree"></div>
+    <section class="block" id="maatwerk"></section>
+  </div>
+  <aside class="summary" id="summary" aria-live="polite"></aside>
+</main>
+
+<footer class="wrap">Configuratieversie <span id="cfgVersion"></span>. Alle onderdelen hebben status concept en zijn niet tegen help.afas.nl gecontroleerd.</footer>
+
+<div id="report"></div>
+
+<script>
+/* =========================================================================
+   CONFIGURATION (demo data, all placeholder values)
+   In the real tool this lives in versioned config files, not in code.
+   ========================================================================= */
+const CONFIG = {
+  version: "demo-0.1",
+  activities: {
+    inrichting: "Inrichting",
+    test: "Test en acceptatie",
+    overdracht: "Overdracht",
+    data: "Data en import"
+  },
+  factors: [
+    { id: "consultant", label: "Consultant", levels: {
+      junior: { label: "Junior", values: { inrichting: 1.3, test: 1.2, data: 1.3 } },
+      medior: { label: "Medior", values: { inrichting: 1.1, test: 1.05, data: 1.1 } },
+      senior: { label: "Senior", values: { inrichting: 1.0, test: 1.0, data: 1.0 } }
+    }},
+    { id: "beheerder", label: "Beheerder", levels: {
+      laag:      { label: "Laag",      values: { test: 1.3, overdracht: 1.4 } },
+      gemiddeld: { label: "Gemiddeld", values: { test: 1.1, overdracht: 1.15 } },
+      hoog:      { label: "Hoog",      values: { test: 1.0, overdracht: 1.0 } }
+    }},
+    { id: "grootte", label: "Organisatie", levels: {
+      klein:  { label: "Klein",  values: { inrichting: 1.0,  test: 1.0,  overdracht: 1.0, data: 1.0 } },
+      middel: { label: "Middel", values: { inrichting: 1.05, test: 1.15, overdracht: 1.2, data: 1.2 } },
+      groot:  { label: "Groot",  values: { inrichting: 1.15, test: 1.3,  overdracht: 1.4, data: 1.5 } }
+    }}
+  ],
+  cap: 1.75,
+  rounding: 0.25,
+  rates: { junior: 850, medior: 1050, senior: 1250 },
+  pm: 10,
+  risico: 10,
+  maatwerkTypes: [
+    { id: "workflow",   naam: "Workflow",                   dagen: 1 },
+    { id: "insite",     naam: "InSite/OutSite-pagina",      dagen: 2 },
+    { id: "generator",  naam: "Generator-rapport",          dagen: 0.5 },
+    { id: "layout",     naam: "Aangepaste lay-out",         dagen: 0.5 },
+    { id: "connector",  naam: "Connector of integratie",    dagen: 3 },
+    { id: "excel",      naam: "Excel-koppeling",            dagen: 0.5 }
+  ],
+  processes: [
+    { id: "financieel", naam: "Financieel (basis)", module: "Financieel", vereist: [],
+      vragen: [
+        { id: "administraties", vraag: "Aantal administraties", opties: [
+          { label: "1", extra: {} },
+          { label: "2 tot 5", extra: { grootboek: 1, dagboeken: 0.5 } },
+          { label: "Meer dan 5", extra: { grootboek: 2.5, dagboeken: 1 } }
+        ]}
+      ],
+      kinderen: [
+        { ref: "grootboek", verplicht: true },
+        { ref: "dagboeken", verplicht: true },
+        { ref: "btw", verplicht: true },
+        { ref: "nummerreeksen", verplicht: true },
+        { ref: "autorisatie", verplicht: true },
+        { ref: "openingsbalans", verplicht: false }
+      ]},
+    { id: "verkoopfactuur", naam: "Verkoopfactuur", module: "Ordermanagement", vereist: ["financieel"],
+      vragen: [],
+      kinderen: [
+        { ref: "verkooprelaties", verplicht: true },
+        { ref: "artikelen", verplicht: true },
+        { ref: "factuurlayout", verplicht: true },
+        { ref: "nummerreeksen", verplicht: true },
+        { ref: "autorisatie", verplicht: true },
+        { ref: "betalingscondities", verplicht: false }
+      ]},
+    { id: "inkoopfactuur", naam: "Inkoopfactuur", module: "Financieel", vereist: ["financieel"],
+      vragen: [],
+      kinderen: [
+        { ref: "inkooprelaties", verplicht: true },
+        { ref: "nummerreeksen", verplicht: true },
+        { ref: "autorisatie", verplicht: true },
+        { ref: "goedkeuring", verplicht: false }
+      ]},
+    { id: "projecten", naam: "Projecten", module: "Projecten", vereist: ["financieel"],
+      vragen: [
+        { id: "projecttypen", vraag: "Aantal projecttypen", opties: [
+          { label: "1 tot 3", extra: {} },
+          { label: "4 of meer", extra: { projectinrichting: 1 } }
+        ]}
+      ],
+      kinderen: [
+        { ref: "projectinrichting", verplicht: true },
+        { ref: "verkooprelaties", verplicht: true },
+        { ref: "projectfacturatie", verplicht: false },
+        { ref: "urenregistratie", verplicht: true },
+        { ref: "artikelen", verplicht: false },
+        { ref: "nacalculatie", verplicht: false }
+      ]}
+  ],
+  parts: {
+    grootboek:         { naam: "Grootboekrekeningschema", basisdagen: { implementatie: { inrichting: 1, test: 0.25, data: 0.5 }, optimalisatie: { inrichting: 0.5, test: 0.25 } } },
+    dagboeken:         { naam: "Dagboeken", basisdagen: { implementatie: { inrichting: 0.5, test: 0.25 }, optimalisatie: { inrichting: 0.25 } } },
+    btw:               { naam: "Btw-codes en aangifte", basisdagen: { implementatie: { inrichting: 0.5, test: 0.25 }, optimalisatie: { inrichting: 0.25, test: 0.25 } } },
+    nummerreeksen:     { naam: "Nummerreeksen", basisdagen: { implementatie: { inrichting: 0.25 }, optimalisatie: { inrichting: 0.25 } } },
+    autorisatie:       { naam: "Autorisatie", basisdagen: { implementatie: { inrichting: 1, test: 0.5, overdracht: 0.25 }, optimalisatie: { inrichting: 0.5, test: 0.25 } } },
+    openingsbalans:    { naam: "Openingsbalans importeren", basisdagen: { implementatie: { data: 1, test: 0.25 }, optimalisatie: null } },
+    verkooprelaties:   { naam: "Verkooprelaties", basisdagen: { implementatie: { inrichting: 0.5, test: 0.25, data: 1 }, optimalisatie: { inrichting: 0.25, data: 0.25 } } },
+    artikelen:         { naam: "Artikelen opvoeren", basisdagen: { implementatie: { inrichting: 0.5, data: 0.5 }, optimalisatie: { inrichting: 0.25 } },
+                         kinderen: [ { ref: "artikelgroepen", verplicht: true }, { ref: "prijslijsten", verplicht: false } ] },
+    artikelgroepen:    { naam: "Artikelgroepen opvoeren", basisdagen: { implementatie: { inrichting: 0.25 }, optimalisatie: { inrichting: 0.25 } } },
+    prijslijsten:      { naam: "Prijslijsten", basisdagen: { implementatie: { inrichting: 0.5, data: 0.5 }, optimalisatie: { inrichting: 0.25 } } },
+    factuurlayout:     { naam: "Factuurlay-out", basisdagen: { implementatie: { inrichting: 0.75, test: 0.25 }, optimalisatie: { inrichting: 0.5 } } },
+    betalingscondities:{ naam: "Betalingscondities", basisdagen: { implementatie: { inrichting: 0.25 }, optimalisatie: { inrichting: 0.25 } } },
+    inkooprelaties:    { naam: "Inkooprelaties", basisdagen: { implementatie: { inrichting: 0.5, data: 0.75 }, optimalisatie: { inrichting: 0.25 } } },
+    goedkeuring:       { naam: "Goedkeuringsworkflow inkoopfacturen", basisdagen: { implementatie: { inrichting: 1, test: 0.5, overdracht: 0.5 }, optimalisatie: { inrichting: 0.5, test: 0.25, overdracht: 0.25 } } },
+    projectinrichting: { naam: "Projecttypen en projectfasen", basisdagen: { implementatie: { inrichting: 1.5, test: 0.5, overdracht: 0.5 }, optimalisatie: { inrichting: 0.75, test: 0.25 } } },
+    projectfacturatie: { naam: "Verkooprelaties: projectfacturatie-instellingen", uitbreidingVan: "verkooprelaties",
+                         basisdagen: { implementatie: { inrichting: 0.5 }, optimalisatie: { inrichting: 0.25 } } },
+    urenregistratie:   { naam: "Urenregistratie", basisdagen: { implementatie: { inrichting: 1, test: 0.5, overdracht: 1 }, optimalisatie: { inrichting: 0.5, overdracht: 0.5 } } },
+    nacalculatie:      { naam: "Nacalculatie", basisdagen: { implementatie: { inrichting: 0.75, test: 0.5 }, optimalisatie: { inrichting: 0.5, test: 0.25 } } }
+  }
+};
+// Every node in this demo is unverified.
+for (const p of Object.values(CONFIG.parts)) { p.status = "concept"; p.bron = ""; }
+
+/* =========================================================================
+   CALCULATION (pure: no DOM, no state; input in, result out)
+   ========================================================================= */
+const Calc = (() => {
+  function isVisible(part, traject) {
+    return !!part && part.basisdagen[traject] != null;
+  }
+
+  // Walk the tree and return every selected, visible occurrence in process order.
+  function collectOccurrences(config, quote) {
+    const out = [];
+    const walk = (children, parentPath, proc) => {
+      for (const c of children || []) {
+        const part = config.parts[c.ref];
+        if (!isVisible(part, quote.traject)) continue;
+        const path = parentPath + ">" + c.ref;
+        if (!quote.selected.has(path)) continue;
+        out.push({ id: c.ref, path, processId: proc.id });
+        walk(part.kinderen, path, proc);
+      }
+    };
+    for (const proc of config.processes) {
+      if (quote.selected.has(proc.id)) walk(proc.kinderen, proc.id, proc);
+    }
+    return out;
+  }
+
+  // Factors apply per activity only; their product is capped.
+  function activityRows(config, quote, part) {
+    const base = part.basisdagen[quote.traject] || {};
+    const rows = [];
+    for (const activity of Object.keys(config.activities)) {
+      const baseDays = base[activity];
+      if (!baseDays) continue;
+      const factors = [];
+      for (const f of config.factors) {
+        const level = f.levels[quote[f.id]];
+        const value = level.values[activity];
+        if (value != null) factors.push({ label: f.label, level: level.label, value });
+      }
+      const product = factors.reduce((acc, f) => acc * f.value, 1);
+      const applied = Math.min(config.cap, product);
+      rows.push({ activity, baseDays, factors, product, applied, capped: product > config.cap, days: baseDays * applied });
+    }
+    return rows;
+  }
+
+  function calculate(config, quote) {
+    const parts = new Map(); // unique part id -> result; first occurrence owns it
+    for (const o of collectOccurrences(config, quote)) {
+      if (!parts.has(o.id)) parts.set(o.id, { id: o.id, owner: o.processId, ownerPath: o.path, paths: [], extras: [] });
+      parts.get(o.id).paths.push(o.path);
+    }
+
+    for (const proc of config.processes) {
+      if (!quote.selected.has(proc.id)) continue;
+      for (const q of proc.vragen || []) {
+        const option = q.opties[quote.answers[proc.id + ":" + q.id] ?? 0];
+        for (const [partId, days] of Object.entries(option.extra || {})) {
+          if (parts.has(partId)) parts.get(partId).extras.push({ label: q.vraag + ": " + option.label, days });
+        }
+      }
+    }
+
+    let cappedCount = 0;
+    for (const p of parts.values()) {
+      p.rows = activityRows(config, quote, config.parts[p.id]);
+      cappedCount += p.rows.filter(r => r.capped).length;
+      p.extraDays = p.extras.reduce((s, e) => s + e.days, 0);
+      p.days = p.rows.reduce((s, r) => s + r.days, 0) + p.extraDays;
+    }
+
+    const all = [...parts.values()];
+    const perProcess = config.processes
+      .filter(pr => quote.selected.has(pr.id))
+      .map(pr => ({ id: pr.id, naam: pr.naam, days: all.filter(p => p.owner === pr.id).reduce((s, p) => s + p.days, 0) }));
+
+    const maatwerk = quote.maatwerk.reduce((s, m) => s + (Number(m.aantal) || 0) * (Number(m.dagenPerStuk) || 0), 0);
+    const partsTotal = all.reduce((s, p) => s + p.days, 0);
+    const subtotal = partsTotal + maatwerk;
+    const pm = subtotal * quote.pm / 100;            // 1. project management
+    const risk = (subtotal + pm) * quote.risico / 100; // 2. risk buffer, on top of PM
+    const total = subtotal + pm + risk;
+    const rate = config.rates[quote.consultant];
+
+    return { parts, perProcess, maatwerk, partsTotal, subtotal, pm, risk, total, rate, amount: total * rate, cappedCount };
+  }
+
+  // Display only. Never used on intermediate values.
+  function roundTo(x, step) { return Math.round(x / step) * step; }
+
+  return { calculate, isVisible, roundTo };
+})();
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+const state = {
+  klant: "",
+  traject: "implementatie",
+  consultant: "senior",
+  beheerder: "gemiddeld",
+  grootte: "middel",
+  pm: CONFIG.pm,
+  risico: CONFIG.risico,
+  selected: new Set(),
+  reasons: {},
+  answers: {},
+  maatwerk: [],
+  openBreakdown: new Set(),
+  pendingReason: null
+};
+
+const quote = (overrides = {}) => ({
+  traject: state.traject,
+  consultant: state.consultant,
+  beheerder: state.beheerder,
+  grootte: state.grootte,
+  selected: state.selected,
+  answers: state.answers,
+  maatwerk: state.maatwerk,
+  pm: Number(state.pm) || 0,
+  risico: Number(state.risico) || 0,
+  ...overrides
+});
+
+/* =========================================================================
+   TREE HELPERS
+   ========================================================================= */
+const procById = id => CONFIG.processes.find(p => p.id === id);
+
+function childrenOf(path) {
+  const ids = path.split(">");
+  if (ids.length === 1) return procById(ids[0]).kinderen;
+  return CONFIG.parts[ids[ids.length - 1]].kinderen || [];
+}
+function visibleKids(children) {
+  return (children || []).filter(c => Calc.isVisible(CONFIG.parts[c.ref], state.traject));
+}
+function selectRequired(path) {
+  for (const c of visibleKids(childrenOf(path))) {
+    if (!c.verplicht) continue;
+    const p = path + ">" + c.ref;
+    state.selected.add(p);
+    delete state.reasons[p];
+    selectRequired(p);
+  }
+}
+function clearBelow(path) {
+  const prefix = path + ">";
+  for (const k of [...state.selected]) if (k.startsWith(prefix)) state.selected.delete(k);
+  for (const k of Object.keys(state.reasons)) if (k.startsWith(prefix)) delete state.reasons[k];
+  for (const k of [...state.openBreakdown]) if (k.startsWith(prefix)) state.openBreakdown.delete(k);
+}
+function hasDeviation(path) {
+  for (const c of visibleKids(childrenOf(path))) {
+    const p = path + ">" + c.ref;
+    const on = state.selected.has(p);
+    if (c.verplicht !== on) return true;
+    if (on && hasDeviation(p)) return true;
+  }
+  return false;
+}
+
+function check(path) {
+  state.selected.add(path);
+  delete state.reasons[path];
+  selectRequired(path);
+}
+function uncheck(path) {
+  if (hasDeviation(path) &&
+      !confirm("Onder dit onderdeel staan keuzes die afwijken van de standaard. Uitvinken wist die keuzes. Doorgaan?")) {
+    return false;
+  }
+  state.selected.delete(path);
+  state.openBreakdown.delete(path);
+  clearBelow(path);
+  return true;
+}
+
+/* =========================================================================
+   FORMATTING
+   ========================================================================= */
+const nl2 = new Intl.NumberFormat("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const eur = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const fmtDays = x => nl2.format(Calc.roundTo(x, CONFIG.rounding)) + " d";
+const fmtExact = x => nl2.format(x);
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
+/* =========================================================================
+   RENDERING
+   ========================================================================= */
+function renderSettings() {
+  const levelSelect = (factorId, label) => {
+    const f = CONFIG.factors.find(x => x.id === factorId);
+    const opts = Object.entries(f.levels)
+      .map(([k, v]) => `<option value="${k}" ${state[factorId] === k ? "selected" : ""}>${v.label}</option>`).join("");
+    return `<label class="field"><span>${label}</span><select data-setting="${factorId}">${opts}</select></label>`;
+  };
+  document.getElementById("settings").innerHTML = `
+    <label class="field"><span>Klant</span><input type="text" data-setting="klant" value="${esc(state.klant)}" placeholder="Naam klant"></label>
+    <div class="field"><span>Trajecttype</span>
+      <div class="seg" role="radiogroup" aria-label="Trajecttype">
+        ${["implementatie", "optimalisatie"].map(t => `
+          <label><input type="radio" name="traject" value="${t}" data-setting="traject" ${state.traject === t ? "checked" : ""}><span>${t[0].toUpperCase() + t.slice(1)}</span></label>`).join("")}
+      </div>
+    </div>
+    ${levelSelect("consultant", "Niveau consultant")}
+    ${levelSelect("beheerder", "Niveau beheerder klant")}
+    ${levelSelect("grootte", "Grootte organisatie")}
+    <label class="field"><span>Projectmanagement %</span><input type="number" min="0" step="1" data-setting="pm" value="${state.pm}"></label>
+    <label class="field"><span>Risicobuffer %</span><input type="number" min="0" step="1" data-setting="risico" value="${state.risico}"></label>`;
+}
+
+function renderBreakdown(info) {
+  const rows = info.rows.map(r => `
+    <tr>
+      <td>${CONFIG.activities[r.activity]}</td>
+      <td class="num">${fmtExact(r.baseDays)}</td>
+      <td>${r.factors.map(f => `${f.label} ${f.level.toLowerCase()} ${fmtExact(f.value)}`).join(" × ") || "geen"}</td>
+      <td class="num ${r.capped ? "capped" : ""}">${r.capped ? `${fmtExact(r.applied)} (cap, was ${fmtExact(r.product)})` : fmtExact(r.applied)}</td>
+      <td class="num">${fmtExact(r.days)}</td>
+    </tr>`).join("");
+  const extras = info.extras.map(e => `
+    <tr><td colspan="4">Extra uit complexiteitsvraag: ${esc(e.label)}</td><td class="num">${fmtExact(e.days)}</td></tr>`).join("");
+  return `
+    <div class="breakdown"><table>
+      <thead><tr><th>Activiteit</th><th class="num">Basis</th><th>Factoren</th><th class="num">Toegepast</th><th class="num">Dagen</th></tr></thead>
+      <tbody>${rows}${extras}
+        <tr><td colspan="4">Totaal onderdeel (weergave afgerond op ${nl2.format(CONFIG.rounding)})</td><td class="num">${fmtDays(info.days)}</td></tr>
+      </tbody>
+    </table></div>`;
+}
+
+function renderKids(children, parentPath, depth, res) {
+  const indent = 14 + depth * 27;
+  return visibleKids(children).map(c => {
+    const part = CONFIG.parts[c.ref];
+    const path = parentPath + ">" + c.ref;
+    const on = state.selected.has(path);
+    const info = res.parts.get(c.ref);
+    const isOwner = on && info && info.ownerPath === path;
+    const elsewhere = info && info.ownerPath !== path ? procById(info.owner).naam : null;
+
+    let daysCell = "";
+    if (isOwner) daysCell = `<span class="days">${fmtDays(info.days)}</span>`;
+    else if (on && elsewhere) daysCell = `<span class="days counted">telt al mee</span>`;
+
+    const reasonLine = c.verplicht && !on && state.reasons[path]
+      ? `<div class="inline-form" style="padding-left:${indent + 27}px"><span class="reason">Uitgevinkt: ${esc(state.reasons[path])}</span></div>` : "";
+
+    const pending = state.pendingReason === path ? `
+      <div class="inline-form" style="padding-left:${indent + 27}px">
+        <input type="text" data-reason-input="${path}" placeholder="Reden, bijvoorbeeld: klant heeft dit al ingericht" aria-label="Reden om uit te vinken">
+        <button class="btn small primary" data-action="reason-confirm" data-path="${path}">Uitvinken</button>
+        <button class="btn small" data-action="reason-cancel">Annuleren</button>
+      </div>` : "";
+
+    const breakdown = isOwner && state.openBreakdown.has(path)
+      ? `<div style="padding-left:${indent + 13}px">${renderBreakdown(info)}</div>` : "";
+
+    return `
+      <li class="kid ${on ? "" : "is-off"}">
+        <div class="row" style="padding-left:${indent}px">
+          <label class="check">
+            <input type="checkbox" data-action="toggle" data-path="${path}" data-verplicht="${c.verplicht}" ${on ? "checked" : ""}>
+            <span class="name">${esc(part.naam)}</span>
+          </label>
+          <span class="tag">${c.verplicht ? "verplicht" : "optioneel"}</span>
+          ${part.uitbreidingVan ? `<span class="tag">uitbreiding</span>` : ""}
+          ${part.status === "concept" ? `<span class="tag concept" title="Nog niet tegen een bron gecontroleerd">concept</span>` : ""}
+          ${elsewhere ? `<span class="tag shared">al meegenomen via ${esc(elsewhere)}</span>` : ""}
+          ${isOwner ? `<button class="linkbtn" data-action="breakdown" data-path="${path}" aria-expanded="${state.openBreakdown.has(path)}">${state.openBreakdown.has(path) ? "Opbouw verbergen" : "Opbouw"}</button>` : ""}
+          ${daysCell}
+        </div>
+        ${pending}${reasonLine}${breakdown}
+        ${on && part.kinderen ? `<ul class="kids">${renderKids(part.kinderen, path, depth + 1, res)}</ul>` : ""}
+      </li>`;
+  }).join("");
+}
+
+function renderQuestions(proc) {
+  if (!proc.vragen || !proc.vragen.length) return "";
+  return `<div class="questions">${proc.vragen.map(q => {
+    const key = proc.id + ":" + q.id;
+    const current = state.answers[key] ?? 0;
+    return `<label class="field"><span>${esc(q.vraag)}</span>
+      <select data-answer="${key}">${q.opties.map((o, i) => `<option value="${i}" ${i === current ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select>
+    </label>`;
+  }).join("")}</div>`;
+}
+
+function renderTree(res) {
+  const warnings = [];
+  for (const proc of CONFIG.processes) {
+    if (!state.selected.has(proc.id)) continue;
+    for (const req of proc.vereist) {
+      if (!state.selected.has(req)) {
+        warnings.push(`<div class="notice"><span>${esc(proc.naam)} vereist ${esc(procById(req).naam)}, maar dat proces is niet geselecteerd.</span>
+          <button class="btn small" data-action="add-process" data-id="${req}">${esc(procById(req).naam)} toevoegen</button></div>`);
+      }
+    }
+  }
+  const procs = CONFIG.processes.map(proc => {
+    const on = state.selected.has(proc.id);
+    const pp = res.perProcess.find(x => x.id === proc.id);
+    return `
+      <section class="proc ${on ? "is-on" : ""}">
+        <div class="row proc-row">
+          <label class="check">
+            <input type="checkbox" data-action="toggle" data-path="${proc.id}" data-verplicht="false" ${on ? "checked" : ""}>
+            <span class="name">${esc(proc.naam)}</span>
+          </label>
+          <span class="module">${esc(proc.module)}</span>
+          ${on ? `<span class="days">${fmtDays(pp ? pp.days : 0)}</span>` : ""}
+        </div>
+        ${on ? renderQuestions(proc) + `<ul class="kids">${renderKids(proc.kinderen, proc.id, 1, res)}</ul>` : ""}
+      </section>`;
+  }).join("");
+  document.getElementById("tree").innerHTML = `<h2>Processen</h2>${[...new Set(warnings)].join("")}${procs}`;
+}
+
+function renderMaatwerk() {
+  const typeOptions = sel => CONFIG.maatwerkTypes
+    .map(t => `<option value="${t.id}" ${t.id === sel ? "selected" : ""}>${esc(t.naam)}</option>`).join("");
+  const rows = state.maatwerk.map((m, i) => `
+    <tr>
+      <td><select data-mw="type" data-i="${i}" aria-label="Type">${typeOptions(m.type)}</select></td>
+      <td><input type="text" data-mw="omschrijving" data-i="${i}" value="${esc(m.omschrijving)}" placeholder="Omschrijving" aria-label="Omschrijving"></td>
+      <td style="width:80px"><input type="number" min="0" step="1" data-mw="aantal" data-i="${i}" value="${m.aantal}" aria-label="Aantal"></td>
+      <td style="width:100px"><input type="number" min="0" step="0.25" data-mw="dagenPerStuk" data-i="${i}" value="${m.dagenPerStuk}" aria-label="Dagen per stuk"></td>
+      <td class="num" data-mw-total="${i}">${fmtDays((Number(m.aantal) || 0) * (Number(m.dagenPerStuk) || 0))}</td>
+      <td><button class="linkbtn" data-action="mw-delete" data-i="${i}">Verwijderen</button></td>
+    </tr>`).join("");
+  document.getElementById("maatwerk").innerHTML = `
+    <h2>Maatwerk</h2>
+    ${state.maatwerk.length ? `
+      <div class="mw-wrap"><table class="mw">
+        <thead><tr><th>Type</th><th>Omschrijving</th><th>Aantal</th><th>Dagen per stuk</th><th class="num">Dagen</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>` : `<p class="empty">Nog geen maatwerk. Voeg een regel toe voor workflows, rapporten, lay-outs of koppelingen.</p>`}
+    <button class="btn" data-action="mw-add" style="margin-top:10px">Maatwerkregel toevoegen</button>`;
+}
+
+function renderSummary(res) {
+  const max = Math.max(0.0001, ...res.perProcess.map(p => p.days));
+  const procLines = res.perProcess.map(p => `
+    <li><span>${esc(p.naam)}</span><span class="val">${fmtDays(p.days)}</span>
+      <div class="bar"><span style="width:${(p.days / max) * 100}%"></span></div></li>`).join("");
+
+  const compareRows = Object.keys(CONFIG.rates).map(level => {
+    const r = level === state.consultant ? res : Calc.calculate(CONFIG, quote({ consultant: level }));
+    const label = CONFIG.factors.find(f => f.id === "consultant").levels[level].label;
+    return `<tr class="${level === state.consultant ? "current" : ""}">
+      <td>${label}</td><td>${fmtDays(r.total)}</td><td>${eur.format(CONFIG.rates[level])}</td><td>${eur.format(r.amount)}</td></tr>`;
+  }).join("");
+
+  const conceptCount = [...res.parts.values()].filter(p => CONFIG.parts[p.id].status === "concept").length;
+  const flags = [];
+  if (res.cappedCount) flags.push(`<span class="capped">Cap van ${nl2.format(CONFIG.cap)} toegepast op ${res.cappedCount} ${res.cappedCount === 1 ? "activiteit" : "activiteiten"}.</span>`);
+  if (conceptCount) flags.push(`<span class="tag concept" style="justify-self:start">${conceptCount} concept-onderdelen in deze offerte</span>`);
+
+  document.getElementById("summary").innerHTML = `
+    <div class="sub">Totaal ${state.klant ? "voor " + esc(state.klant) : ""}</div>
+    <div class="total-days">${fmtDays(res.total)}</div>
+    <div class="total-amount">${eur.format(res.amount)}</div>
+    <div class="sub">${state.traject}, dagtarief ${eur.format(res.rate)}</div>
+
+    <ul class="lines">
+      ${procLines || `<li><span class="sub">Vink een proces aan om te beginnen.</span></li>`}
+      <li><span>Maatwerk</span><span class="val">${fmtDays(res.maatwerk)}</span></li>
+      <li class="strong"><span>Subtotaal</span><span class="val">${fmtDays(res.subtotal)}</span></li>
+      <li><span>Projectmanagement ${nl2.format(Number(state.pm) || 0)}%</span><span class="val">${fmtDays(res.pm)}</span></li>
+      <li><span>Risicobuffer ${nl2.format(Number(state.risico) || 0)}%</span><span class="val">${fmtDays(res.risk)}</span></li>
+      <li class="strong"><span>Totaal</span><span class="val">${fmtDays(res.total)}</span></li>
+    </ul>
+
+    <h3>Zelfde offerte per consultantniveau</h3>
+    <table class="compare">
+      <thead><tr><th>Niveau</th><th>Dagen</th><th>Tarief</th><th>Bedrag</th></tr></thead>
+      <tbody>${compareRows}</tbody>
+    </table>
+
+    ${flags.length ? `<div class="flags">${flags.join("")}</div>` : ""}
+    <button class="btn primary" data-action="print">Afdrukken of opslaan als PDF</button>`;
+}
+
+function renderReport(res) {
+  const date = new Date().toLocaleDateString("nl-NL");
+  const procSections = res.perProcess.map(pp => {
+    const items = [];
+    const walk = (children, parentPath, depth) => {
+      for (const c of visibleKids(children)) {
+        const path = parentPath + ">" + c.ref;
+        const on = state.selected.has(path);
+        const info = res.parts.get(c.ref);
+        const name = "\u00a0\u00a0".repeat(depth) + CONFIG.parts[c.ref].naam;
+        if (on) {
+          const owner = info && info.ownerPath === path;
+          items.push(`<tr><td>${esc(name)}</td><td>${owner ? "" : "Al meegenomen via " + esc(procById(info.owner).naam)}</td><td class="num">${owner ? fmtDays(info.days) : ""}</td></tr>`);
+          walk(CONFIG.parts[c.ref].kinderen, path, depth + 1);
+        } else if (c.verplicht && state.reasons[path]) {
+          items.push(`<tr><td>${esc(name)}</td><td>Niet meegenomen: ${esc(state.reasons[path])}</td><td class="num">0,00 d</td></tr>`);
+        }
+      }
+    };
+    walk(procById(pp.id).kinderen, pp.id, 0);
+    return `<h2>${esc(pp.naam)} (${fmtDays(pp.days)})</h2>
+      <table><thead><tr><th>Onderdeel</th><th>Toelichting</th><th class="num">Dagen</th></tr></thead><tbody>${items.join("")}</tbody></table>`;
+  }).join("");
+
+  const mw = state.maatwerk.length ? `<h2>Maatwerk</h2><table>
+    <thead><tr><th>Type</th><th>Omschrijving</th><th class="num">Aantal</th><th class="num">Dagen per stuk</th><th class="num">Dagen</th></tr></thead>
+    <tbody>${state.maatwerk.map(m => `<tr><td>${esc(CONFIG.maatwerkTypes.find(t => t.id === m.type).naam)}</td><td>${esc(m.omschrijving)}</td>
+      <td class="num">${m.aantal}</td><td class="num">${nl2.format(Number(m.dagenPerStuk) || 0)}</td>
+      <td class="num">${fmtDays((Number(m.aantal) || 0) * (Number(m.dagenPerStuk) || 0))}</td></tr>`).join("")}</tbody></table>` : "";
+
+  const lvl = id => CONFIG.factors.find(f => f.id === id).levels[state[id]].label;
+  document.getElementById("report").innerHTML = `
+    <h1>Offerte-indicatie ${state.klant ? "– " + esc(state.klant) : ""}</h1>
+    <p>Datum ${date}. Trajecttype ${state.traject}. Consultant ${lvl("consultant")}, beheerder ${lvl("beheerder")}, organisatie ${lvl("grootte")}.
+       Configuratieversie ${CONFIG.version}. Demo met voorbeeldwaarden.</p>
+    ${procSections}${mw}
+    <h2>Totaal</h2>
+    <table><tbody>
+      <tr><td>Subtotaal</td><td class="num">${fmtDays(res.subtotal)}</td></tr>
+      <tr><td>Projectmanagement ${state.pm}%</td><td class="num">${fmtDays(res.pm)}</td></tr>
+      <tr><td>Risicobuffer ${state.risico}%</td><td class="num">${fmtDays(res.risk)}</td></tr>
+      <tr><td><strong>Totaal</strong></td><td class="num"><strong>${fmtDays(res.total)}</strong></td></tr>
+      <tr><td>Dagtarief</td><td class="num">${eur.format(res.rate)}</td></tr>
+      <tr><td><strong>Bedrag</strong></td><td class="num"><strong>${eur.format(res.amount)}</strong></td></tr>
+    </tbody></table>`;
+}
+
+function render() {
+  const res = Calc.calculate(CONFIG, quote());
+  renderTree(res);
+  renderMaatwerk();
+  renderSummary(res);
+  if (state.pendingReason) {
+    const input = reasonInput(state.pendingReason);
+    if (input) input.focus();
+  }
+}
+function renderSummaryOnly() {
+  renderSummary(Calc.calculate(CONFIG, quote()));
+}
+
+/* =========================================================================
+   EVENTS
+   ========================================================================= */
+function reasonInput(path) {
+  return [...document.querySelectorAll("[data-reason-input]")].find(el => el.dataset.reasonInput === path);
+}
+function confirmReason(path) {
+  const input = reasonInput(path);
+  const text = input ? input.value.trim() : "";
+  if (!text) { if (input) { input.focus(); input.placeholder = "Vul een reden in om dit verplichte onderdeel uit te vinken"; } return; }
+  if (uncheck(path)) state.reasons[path] = text;
+  state.pendingReason = null;
+  render();
+}
+
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.action === "toggle") {
+    const path = t.dataset.path;
+    if (t.checked) {
+      check(path);
+    } else if (t.dataset.verplicht === "true") {
+      state.pendingReason = path; // ask for a reason first
+    } else {
+      uncheck(path);
+    }
+    render();
+    return;
+  }
+  if (t.dataset.setting && ["traject", "consultant", "beheerder", "grootte"].includes(t.dataset.setting)) {
+    state[t.dataset.setting] = t.value;
+    state.pendingReason = null;
+    render();
+    return;
+  }
+  if (t.dataset.answer) {
+    state.answers[t.dataset.answer] = Number(t.value);
+    render();
+    return;
+  }
+  if (t.dataset.mw === "type") {
+    const m = state.maatwerk[Number(t.dataset.i)];
+    m.type = t.value;
+    m.dagenPerStuk = CONFIG.maatwerkTypes.find(x => x.id === t.value).dagen;
+    render();
+  }
+});
+
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.dataset.setting === "klant") { state.klant = t.value; renderSummaryOnly(); return; }
+  if (t.dataset.setting === "pm" || t.dataset.setting === "risico") { state[t.dataset.setting] = t.value; renderSummaryOnly(); return; }
+  if (t.dataset.mw === "omschrijving") { state.maatwerk[Number(t.dataset.i)].omschrijving = t.value; return; }
+  if (t.dataset.mw === "aantal" || t.dataset.mw === "dagenPerStuk") {
+    const i = Number(t.dataset.i);
+    const m = state.maatwerk[i];
+    m[t.dataset.mw] = t.value;
+    const cell = document.querySelector(`[data-mw-total="${i}"]`);
+    if (cell) cell.textContent = fmtDays((Number(m.aantal) || 0) * (Number(m.dagenPerStuk) || 0));
+    renderSummaryOnly();
+  }
+});
+
+document.addEventListener("keydown", e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.reasonInput) {
+    if (e.key === "Enter") { e.preventDefault(); confirmReason(t.dataset.reasonInput); }
+    if (e.key === "Escape") { state.pendingReason = null; render(); }
+  }
+});
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-action]");
+  if (!t || t.dataset.action === "toggle") return;
+  switch (t.dataset.action) {
+    case "add-process":
+      check(t.dataset.id);
+      render();
+      break;
+    case "breakdown": {
+      const p = t.dataset.path;
+      state.openBreakdown.has(p) ? state.openBreakdown.delete(p) : state.openBreakdown.add(p);
+      render();
+      break;
+    }
+    case "reason-confirm":
+      confirmReason(t.dataset.path);
+      break;
+    case "reason-cancel":
+      state.pendingReason = null;
+      render();
+      break;
+    case "mw-add": {
+      const first = CONFIG.maatwerkTypes[0];
+      state.maatwerk.push({ type: first.id, omschrijving: "", aantal: 1, dagenPerStuk: first.dagen });
+      render();
+      break;
+    }
+    case "mw-delete":
+      state.maatwerk.splice(Number(t.dataset.i), 1);
+      render();
+      break;
+    case "print":
+      renderReport(Calc.calculate(CONFIG, quote()));
+      window.print();
+      break;
+  }
+});
+window.addEventListener("beforeprint", () => renderReport(Calc.calculate(CONFIG, quote())));
+
+document.getElementById("cfgVersion").textContent = CONFIG.version;
+renderSettings();
+render();
+</script>
+</body>
+</html>
