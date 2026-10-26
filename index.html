@@ -197,7 +197,7 @@
 
 <header class="top wrap">
   <h1>Offertetool</h1>
-  <p class="demo-note"><strong>Demoversie voor beeldvorming.</strong> Alle processen, onderdelen, basisdagen, factoren en tarieven zijn voorbeeldwaarden. Er wordt niets opgeslagen.</p>
+  <p class="demo-note"><strong>Demoversie voor beeldvorming.</strong> De structuur van Basisinrichting en Financieel volgt help.afas.nl (opgehaald 26 oktober 2026). Basisdagen, factoren en tarieven zijn plaatsvervangende waarden. Er wordt niets opgeslagen.</p>
   <div class="settings" id="settings"></div>
 </header>
 
@@ -209,7 +209,7 @@
   <aside class="summary" id="summary" aria-live="polite"></aside>
 </main>
 
-<footer class="wrap">Configuratieversie <span id="cfgVersion"></span>. Alle onderdelen hebben status concept en zijn niet tegen help.afas.nl gecontroleerd.</footer>
+<footer class="wrap">Configuratieversie <span id="cfgVersion"></span>. Basisdagen zijn voor elke stap gelijk en zijn geen schatting. Onderdelen met status concept zijn niet tegen een bron gecontroleerd.</footer>
 
 <div id="report"></div>
 
@@ -219,7 +219,7 @@
    In the real tool this lives in versioned config files, not in code.
    ========================================================================= */
 const CONFIG = {
-  version: "demo-0.1",
+  version: "demo-0.2",
   activities: {
     inrichting: "Inrichting",
     test: "Test en acceptatie",
@@ -256,82 +256,278 @@ const CONFIG = {
     { id: "connector",  naam: "Connector of integratie",    dagen: 3 },
     { id: "excel",      naam: "Excel-koppeling",            dagen: 0.5 }
   ],
-  processes: [
-    { id: "financieel", naam: "Financieel (basis)", module: "Financieel", vereist: [],
-      vragen: [
-        { id: "administraties", vraag: "Aantal administraties", opties: [
-          { label: "1", extra: {} },
-          { label: "2 tot 5", extra: { grootboek: 1, dagboeken: 0.5 } },
-          { label: "Meer dan 5", extra: { grootboek: 2.5, dagboeken: 1 } }
-        ]}
-      ],
-      kinderen: [
-        { ref: "grootboek", verplicht: true },
-        { ref: "dagboeken", verplicht: true },
-        { ref: "btw", verplicht: true },
-        { ref: "nummerreeksen", verplicht: true },
-        { ref: "autorisatie", verplicht: true },
-        { ref: "openingsbalans", verplicht: false }
-      ]},
-    { id: "verkoopfactuur", naam: "Verkoopfactuur", module: "Ordermanagement", vereist: ["financieel"],
-      vragen: [],
-      kinderen: [
-        { ref: "verkooprelaties", verplicht: true },
-        { ref: "artikelen", verplicht: true },
-        { ref: "factuurlayout", verplicht: true },
-        { ref: "nummerreeksen", verplicht: true },
-        { ref: "autorisatie", verplicht: true },
-        { ref: "betalingscondities", verplicht: false }
-      ]},
-    { id: "inkoopfactuur", naam: "Inkoopfactuur", module: "Financieel", vereist: ["financieel"],
-      vragen: [],
-      kinderen: [
-        { ref: "inkooprelaties", verplicht: true },
-        { ref: "nummerreeksen", verplicht: true },
-        { ref: "autorisatie", verplicht: true },
-        { ref: "goedkeuring", verplicht: false }
-      ]},
-    { id: "projecten", naam: "Projecten", module: "Projecten", vereist: ["financieel"],
-      vragen: [
-        { id: "projecttypen", vraag: "Aantal projecttypen", opties: [
-          { label: "1 tot 3", extra: {} },
-          { label: "4 of meer", extra: { projectinrichting: 1 } }
-        ]}
-      ],
-      kinderen: [
-        { ref: "projectinrichting", verplicht: true },
-        { ref: "verkooprelaties", verplicht: true },
-        { ref: "projectfacturatie", verplicht: false },
-        { ref: "urenregistratie", verplicht: true },
-        { ref: "artikelen", verplicht: false },
-        { ref: "nacalculatie", verplicht: false }
-      ]}
-  ],
-  parts: {
-    grootboek:         { naam: "Grootboekrekeningschema", basisdagen: { implementatie: { inrichting: 1, test: 0.25, data: 0.5 }, optimalisatie: { inrichting: 0.5, test: 0.25 } } },
-    dagboeken:         { naam: "Dagboeken", basisdagen: { implementatie: { inrichting: 0.5, test: 0.25 }, optimalisatie: { inrichting: 0.25 } } },
-    btw:               { naam: "Btw-codes en aangifte", basisdagen: { implementatie: { inrichting: 0.5, test: 0.25 }, optimalisatie: { inrichting: 0.25, test: 0.25 } } },
-    nummerreeksen:     { naam: "Nummerreeksen", basisdagen: { implementatie: { inrichting: 0.25 }, optimalisatie: { inrichting: 0.25 } } },
-    autorisatie:       { naam: "Autorisatie", basisdagen: { implementatie: { inrichting: 1, test: 0.5, overdracht: 0.25 }, optimalisatie: { inrichting: 0.5, test: 0.25 } } },
-    openingsbalans:    { naam: "Openingsbalans importeren", basisdagen: { implementatie: { data: 1, test: 0.25 }, optimalisatie: null } },
-    verkooprelaties:   { naam: "Verkooprelaties", basisdagen: { implementatie: { inrichting: 0.5, test: 0.25, data: 1 }, optimalisatie: { inrichting: 0.25, data: 0.25 } } },
-    artikelen:         { naam: "Artikelen opvoeren", basisdagen: { implementatie: { inrichting: 0.5, data: 0.5 }, optimalisatie: { inrichting: 0.25 } },
-                         kinderen: [ { ref: "artikelgroepen", verplicht: true }, { ref: "prijslijsten", verplicht: false } ] },
-    artikelgroepen:    { naam: "Artikelgroepen opvoeren", basisdagen: { implementatie: { inrichting: 0.25 }, optimalisatie: { inrichting: 0.25 } } },
-    prijslijsten:      { naam: "Prijslijsten", basisdagen: { implementatie: { inrichting: 0.5, data: 0.5 }, optimalisatie: { inrichting: 0.25 } } },
-    factuurlayout:     { naam: "Factuurlay-out", basisdagen: { implementatie: { inrichting: 0.75, test: 0.25 }, optimalisatie: { inrichting: 0.5 } } },
-    betalingscondities:{ naam: "Betalingscondities", basisdagen: { implementatie: { inrichting: 0.25 }, optimalisatie: { inrichting: 0.25 } } },
-    inkooprelaties:    { naam: "Inkooprelaties", basisdagen: { implementatie: { inrichting: 0.5, data: 0.75 }, optimalisatie: { inrichting: 0.25 } } },
-    goedkeuring:       { naam: "Goedkeuringsworkflow inkoopfacturen", basisdagen: { implementatie: { inrichting: 1, test: 0.5, overdracht: 0.5 }, optimalisatie: { inrichting: 0.5, test: 0.25, overdracht: 0.25 } } },
-    projectinrichting: { naam: "Projecttypen en projectfasen", basisdagen: { implementatie: { inrichting: 1.5, test: 0.5, overdracht: 0.5 }, optimalisatie: { inrichting: 0.75, test: 0.25 } } },
-    projectfacturatie: { naam: "Verkooprelaties: projectfacturatie-instellingen", uitbreidingVan: "verkooprelaties",
-                         basisdagen: { implementatie: { inrichting: 0.5 }, optimalisatie: { inrichting: 0.25 } } },
-    urenregistratie:   { naam: "Urenregistratie", basisdagen: { implementatie: { inrichting: 1, test: 0.5, overdracht: 1 }, optimalisatie: { inrichting: 0.5, overdracht: 0.5 } } },
-    nacalculatie:      { naam: "Nacalculatie", basisdagen: { implementatie: { inrichting: 0.75, test: 0.5 }, optimalisatie: { inrichting: 0.5, test: 0.25 } } }
-  }
+  processes: [],
+  parts: {}
 };
-// Every node in this demo is unverified.
-for (const p of Object.values(CONFIG.parts)) { p.status = "concept"; p.bron = ""; }
+
+/* -------------------------------------------------------------------------
+   AFAS SCOPE: Basisinrichting + Financieel
+   Structure taken from help.afas.nl, page "Inrichting Financieel" and every
+   page in its "Werkwijze" (read 26-10-2026). Names are AFAS names.
+   Rules used for this demo (open decisions, see WIJZIGINGSLOG.md):
+   - AFAS page = onderdeel, AFAS step / sub-page = subonderdeel.
+   - Page with numbered AFAS steps ("Stap 1..n"): steps are required,
+     unless AFAS marks them optional or they are sector/region specific.
+   - Page that only lists links: every item is optional.
+   - Every page under a process is optional.
+   ------------------------------------------------------------------------- */
+const HELP = "https://help.afas.nl/help/NL/SE/";
+
+// PLACEHOLDER base days, identical for every step. Not an estimate:
+// the real base days are supplied by BOLDR.
+const PLACEHOLDER = () => ({
+  implementatie: { inrichting: 0.25, test: 0.125, overdracht: 0.125 },
+  optimalisatie: { inrichting: 0.125, test: 0.125 }
+});
+
+// Step flags: "o" = AFAS marks optional, "s" = sector/region specific,
+// "k" = pick one of several (e.g. which bank), "f" = function, not set-up.
+function page(id, naam, file, steps, opts = {}) {
+  const kinderen = (steps || []).map((s, i) => {
+    const [label, flags = ""] = Array.isArray(s) ? s : [s];
+    const cid = id + "-" + (i + 1);
+    CONFIG.parts[cid] = {
+      naam: label, bron: file ? HELP + file : "", status: "geverifieerd", flags,
+      basisdagen: PLACEHOLDER()
+    };
+    return { ref: cid, verplicht: !!opts.stepped && !/[osk]/.test(flags) };
+  });
+  CONFIG.parts[id] = {
+    naam, bron: file ? HELP + file : "", status: opts.status || "geverifieerd",
+    flags: opts.flags || "", omschrijving: opts.omschrijving || "", afasNaam: opts.afasNaam || "",
+    basisdagen: opts.basisdagen || (kinderen.length ? { implementatie: {}, optimalisatie: {} } : PLACEHOLDER()),
+    kinderen
+  };
+  return { ref: id, verplicht: !!opts.verplicht };
+}
+
+CONFIG.processes.push({
+  id: "basisinrichting", naam: "Basisinrichting", module: "Algemeen", bron: HELP + "Bas_Basic.htm",
+  vereist: [], vragen: [],
+  kinderen: [
+    page("bas-functionaliteit", "Functionaliteit activeren", "Bas_Basic.htm"),
+    page("bas-land", "Landinstellingen", "Bas_Basic.htm"),
+    page("bas-talen", "Talen inrichten", "Bas_Basic.htm"),
+    page("bas-tijdvelden", "Invoer van tijdvelden inrichten", "Bas_Basic.htm"),
+    page("bas-sluitingsdagen", "Sluitingsdagen instellen", "Bas_Basic.htm"),
+    page("bas-periodetabel", "Periodetabel inrichten", "Bas_Basic.htm"),
+    page("bas-periodeverdeel", "Periodeverdeeltabel inrichten", "Bas_Basic.htm"),
+    page("bas-autonummering", "Autonummering en tellers inrichten", "App_GenSet_Nr_Auto.htm"),
+    page("bas-bankrekeningen", "Bankrekeningen instellen", "Bas_Basic.htm"),
+    page("bas-facturering", "Facturering en integratie inrichten", "Bas_Basic.htm"),
+    page("bas-afdrukken", "Afdrukken en e-mailen rapporten inrichten", "Bas_Basic.htm"),
+    page("bas-efacturering", "E-facturering inrichten", "Bas_Basic.htm"),
+    page("bas-journalisering", "Journalisering inrichten", "Bas_Basic.htm"),
+    page("bas-afronding", "Afrondingsmethode instellen", "Bas_Basic.htm"),
+    page("bas-logging", "Logging instellen", "Bas_Basic.htm"),
+    page("bas-wachtrij", "Wachtrij inrichten en gebruiken", "Bas_Basic.htm")
+  ]
+});
+
+CONFIG.processes.push({
+  id: "financieel", naam: "Financieel", module: "Financieel", bron: HELP + "Fin_Config.htm",
+  vereist: ["basisinrichting"],
+  vragen: [
+    { id: "administraties", vraag: "Aantal administraties", opties: [
+      { label: "1", extra: {} },
+      { label: "2 tot 5", extra: { "fin-administraties": 0.5 } },   // placeholder extra days
+      { label: "Meer dan 5", extra: { "fin-administraties": 1 } }   // placeholder extra days
+    ]}
+  ],
+  kinderen: [
+    page("fin-omgevingen", "Omgevingen", "App_Environment.htm", [
+      "Kiezen voor een nieuwe omgeving of administratie",
+      "Huisstijl aanmaken en beheren",
+      "Licentie en licentietellingen"
+    ]),
+    page("fin-administraties", "Administraties", "App_GenSet_Admin.htm", [
+      "Meegeleverde administraties vanuit template inrichten",
+      "Extra nieuwe administratie toevoegen",
+      "Functionaliteit hybride administraties van landen activeren",
+      "Administratiesets toevoegen"
+    ]),
+    page("fin-grootboek", "Grootboek inrichten", "Fin_Config_Ledger.htm", [
+      ["Lengte grootboekrekeningen raadplegen en wijzigen", "o"],
+      "Controle standaard grootboekschema",
+      "Grootboekrekening toevoegen",
+      ["Afwijkende omschrijving grootboekrekening per administratie inrichten", "o"],
+      ["Grootboek indelen met rekeningniveaus", "o"],
+      ["Referentie GrootboekSchema (RGS) inrichten", "o"],
+      ["Rekeningschema Payroll inrichten", "o"],
+      ["Rapportagecockpit België inrichten", "os"],
+      ["Rapportage Informatie voor Derden (Iv3-rapportage) inrichten", "os"]
+    ], { stepped: true }),
+    page("fin-dagboeken", "Dagboeken inrichten", "Fin_Config_Journal.htm", [
+      "Dagboek inrichten",
+      "Tellers inrichten",
+      "Periode blokkeren in een dagboek",
+      "Vrije velden toevoegen voor financiële mutaties"
+    ]),
+    page("fin-vastejournaalposten", "Vaste journaalposten inrichten", "Fin_Config_FxdEnt.htm"),
+    page("fin-debcrd", "Debiteuren en crediteuren inrichten", "Fin_Config_DebCrd.htm", [
+      "Verkooprelatieprofiel inrichten",
+      "Inkooprelatieprofiel inrichten",
+      "Autonummering opzetten",
+      "Betaalvoorwaarde toevoegen",
+      "Verzamelrekeningen debiteuren en crediteuren toevoegen",
+      "Aanvullende velden debiteuren en crediteuren",
+      "Nummeringsgrenzen debiteuren en crediteuren inrichten",
+      "Kredietbeperking en betalingskorting inrichten",
+      "Ouderdomsgrenzen inrichten",
+      "Pandgrenzen inrichten",
+      "G-rekening inrichten (alleen crediteuren)",
+      "Inkoopfacturen beoordelen inrichten",
+      "Debiteuren toevoegen",
+      "Crediteuren toevoegen"
+    ]),
+    page("fin-debcrd-insite", "Debiteuren en crediteuren in InSite inrichten", "Sales_Config_Custr_Ins.htm", [
+      "Inrichting InSite",
+      "Profiel inrichten",
+      "Workflow voor verkooprelatie met forecast inrichten",
+      "Nieuwe bankrekening bij bestaande organisatie, inkooprelatie of verkooprelatie"
+    ], { afasNaam: "Verkooprelatie/debiteur in InSite inrichten" }),
+    page("fin-aanmaningen", "Aanmaningen inrichten", "Fin_Config_DebCrd_Remind.htm", [
+      "Aanmaningsset controleren en wijzigen",
+      "Aanmaningsset toevoegen",
+      "Aanmaningen splitsen op basis van aantal aanmaningen of per factuur",
+      ["Aanmaningsset per grootboekrekening (Overheid)", "s"],
+      ["Aanmaningsinstellingen per debiteur vastleggen", "o"],
+      ["Aanmaningsrente inrichten", "o"],
+      ["Incassokosten op aanmaningen inrichten", "o"]
+    ], { stepped: true }),
+    page("fin-incasso", "Incasso-opdracht inrichten", "Fin_Config_DebCrd_Collct_SEPA.htm", [
+      "Incassant-ID vastleggen",
+      "Administratie-instellingen automatische incasso inrichten",
+      "Bankrekening inrichten voor automatische incasso via SEPA",
+      "Debiteuren instellen",
+      ["Incassomachtigingen importeren", "o"]
+    ], { stepped: true, afasNaam: "Automatische incasso inrichten" }),
+    page("fin-betaalopdracht", "Betaal-opdracht inrichten", "Fin_Config_Paymnt_Domstc.htm", [
+      "Adres controleren",
+      "Instellingen automatisch betalen",
+      "Tussenrekening Betalingen onderweg toevoegen",
+      "Dagboek Betalingen onderweg toevoegen",
+      "Bankrekening en bestandslocatie voor automatisch betalen inrichten",
+      "Crediteur inrichten voor automatische betalingen",
+      "Weergave openstaande posten wijzigen",
+      "Landen inrichten",
+      "Bankrekening inrichten voor automatisch terugbetalen debiteuren",
+      "Betaaltermijnen aan betaalvoorwaarden toevoegen",
+      "Rapportlay-out opdrachtbrief, betaalvoorstel en betaalspecificatie instellen",
+      "Betaalspecificatie via e-mail inrichten",
+      "Automatische betalingen buitenland inrichten",
+      ["Automatische betalingen inrichten (Caribbean)", "s"],
+      "Betalingen Payroll inrichten"
+    ], { afasNaam: "Automatisch betalen inrichten" }),
+    page("fin-bankafschriften", "Bankafschriften inrichten", "Fin_Config_BankSt.htm", [
+      "Bankafschriften autoriseren",
+      "Instellingen bankafschriften inrichten",
+      "Grootboekrekening bank inrichten",
+      "Dagboek bank inrichten",
+      "Teller boekstuknummer bankboek inrichten",
+      "Bankrekening automatisch toevoegen inrichten",
+      "Bankafschrift direct automatisch verwerken na inlezen",
+      "Transactiecode bank toevoegen",
+      "Transactiecode bank met verbijzondering toevoegen",
+      "Bankafschriften afletteren op BSN-nummer inrichten"
+    ]),
+    page("fin-bankkoppeling", "Bankkoppeling internetbankieren inrichten", "Fin_Config_BnkInt.htm", [
+      "Communicatieservice autoriseren",
+      "Communicatieomgeving instellen",
+      "Geplande taak Communicatieservice voor verzenden en ontvangen",
+      ["Bankkoppeling Rabobank (API-koppeling)", "k"],
+      ["Bankkoppeling ABN AMRO (API-koppeling)", "k"],
+      ["Bankkoppeling ING", "k"],
+      ["Bankkoppeling Knab (API-koppeling)", "k"],
+      ["Bankkoppeling BNG Bank (API-koppeling)", "k"],
+      ["Bankkoppeling Van Lanschot Kempen (API-koppeling)", "k"],
+      ["Bankkoppeling Isabel", "k"],
+      "Bestaande bankkoppeling naar andere omgeving of administratie verhuizen",
+      "Bankkoppeling in bankrekening controleren"
+    ], { afasNaam: "Bankkoppeling" }),
+    page("fin-btw", "BTW/ICP-aangifte inrichten", "Fin_Config_VatIct.htm", [
+      "Administratie-instellingen vastleggen btw",
+      "Icp-aangifte instellen",
+      "Betaling Belastingdienst in administratie-instellingen bepalen",
+      "Btw-codes toevoegen",
+      ["Kleineondernemersregeling (KOR) inrichten", "o"],
+      ["Btw-aangifte fiscale eenheid inrichten", "o"],
+      ["Btw-verlegd inrichten", "o"],
+      ["Btw vrijgesteld met prorata voor Inkoop inrichten (Zorg/Onderwijs)", "os"],
+      ["Btw vrijgesteld voor Inkoop van voorraadartikelen inrichten (Zorg/Onderwijs)", "os"],
+      ["Btw met terugvordering btw-compensatiefonds inrichten (Overheid)", "os"],
+      ["Btw-aangifte accorderen via OutSite inrichten (Accountancy)", "os"]
+    ], { stepped: true, afasNaam: "Btw/icp inrichten" }),
+    page("fin-verslaglegging", "Verslaglegging inrichten", "Fin_Config_YrEnd.htm", [
+      "Rapportagecockpit",
+      "Grootboekset",
+      "Kenmerkset",
+      "Kenmerkstructuur",
+      "Financieel project toevoegen"
+    ]),
+    page("fin-verbijzondering", "Verbijzondering inrichten", "139746.htm", [
+      "Aantal verbijzonderingsassen bepalen",
+      "Administratie-instellingen verbijzondering vastleggen",
+      "Verbijzonderingscode toevoegen",
+      "Grootboekrekening inrichten voor verbijzonderen",
+      "Verbijzonderingscodes toewijzen aan rekeningen",
+      ["Verbijzonderingstoewijzingen blokkeren", "o"],
+      ["Filterautorisatie bij verbijzondering", "o"],
+      ["Verbijzonderingsafhankelijkheden", "o"],
+      ["Verbijzondering doorverdelen", "o"],
+      ["Verbijzonderingsstructuur", "o"],
+      ["Niet-terugvorderbare btw inrichten", "o"]
+    ], { stepped: true }),
+    page("fin-vasteactiva", "Vaste Activa inrichten", "Fin_Config_FxdAst.htm", [
+      "Basisinstellingen vastleggen",
+      "Periodetabel toevoegen",
+      "Activagroepen inrichten",
+      "Actief toevoegen",
+      ["Geplande taak afschrijvingen journaliseren instellen", "o"],
+      ["Autorisatie", "o"],
+      ["Optionele inrichting vaste activa", "o"]
+    ], { stepped: true }),
+    page("fin-auditfile", "Auditfile", "Fin_AuditF.htm", [], { flags: "f" }),
+    page("fin-budgettering", "Budgettering inrichten", "Fin_Config_Budget.htm", [
+      "Administratie-instellingen inrichten",
+      "Grootboekrekening inrichten",
+      ["Budgetscenario toevoegen", "o"],
+      ["Budgethouders vastleggen", "o"],
+      "Budgetaanvragen inrichten"
+    ], { stepped: true }),
+    page("fin-herberekenen", "Herberekenen cumulatieven", "Fin_Recalc.htm", [], { flags: "f" }),
+    page("fin-giften", "Charitatieve instellingen (giften)", "Fin_Config_Gifts.htm", [
+      "Dagboek toevoegen",
+      "Opbrengstrekening toevoegen",
+      "Automatische verwerking bankafschrift"
+    ], { flags: "s" }),
+    page("fin-valuta", "Valuta inrichten", "Fin_Config_Crrncy.htm", [
+      "Administratie-instellingen financieel controleren",
+      "Valuta toevoegen",
+      "Dagkoersen toevoegen",
+      "Boekingslay-out in vreemde valuta inrichten",
+      "Dagboek in vreemde valuta toevoegen",
+      "Verzamelrekening in vreemde valuta toevoegen",
+      "Debiteuren en crediteuren instellen",
+      ["Bankrekeningnummers in vreemde valuta toevoegen", "o"]
+    ], { stepped: true }),
+    page("fin-rc", "(Meerdere) administraties inrichten en rekening-courantverhouding inrichten", "Fin_Config_RC.htm", [
+      "Bestaande inrichting controleren",
+      "Dagboek toevoegen",
+      "Grootboekrekening toevoegen",
+      "Rekening-courantverhouding inrichten",
+      ["Optionele inrichting rekening-courant", "o"]
+    ], { stepped: true, afasNaam: "Rekening-courant inrichten" }),
+    page("fin-openingsbalans", "Openingsbalans en datamigratie", "", [], {
+      status: "concept",
+      omschrijving: "TODO: staat niet in de AFAS-werkwijze Inrichting Financieel. BOLDR-onderdeel; inhoud en bron nog bepalen.",
+      basisdagen: {
+        implementatie: { data: 0.25, test: 0.125 },   // placeholder
+        optimalisatie: null                          // not shown for optimalisatie
+      }
+    })
+  ]
+});
 
 /* =========================================================================
    CALCULATION (pure: no DOM, no state; input in, result out)
@@ -577,9 +773,16 @@ function renderKids(children, parentPath, depth, res) {
     const isOwner = on && info && info.ownerPath === path;
     const elsewhere = info && info.ownerPath !== path ? procById(info.owner).naam : null;
 
+    // Days shown on a node = its own days plus every part it owns further down the tree.
+    const subtreeDays = [...res.parts.values()]
+      .filter(x => x.ownerPath === path || x.ownerPath.startsWith(path + ">"))
+      .reduce((sum, x) => sum + x.days, 0);
+    const hasOwnRows = isOwner && (info.rows.length || info.extras.length);
     let daysCell = "";
-    if (isOwner) daysCell = `<span class="days">${fmtDays(info.days)}</span>`;
+    if (isOwner) daysCell = `<span class="days">${fmtDays(subtreeDays)}</span>`;
     else if (on && elsewhere) daysCell = `<span class="days counted">telt al mee</span>`;
+    const flags = part.flags || "";
+    const stepCount = visibleKids(part.kinderen).length;
 
     const reasonLine = c.verplicht && !on && state.reasons[path]
       ? `<div class="inline-form" style="padding-left:${indent + 27}px"><span class="reason">Uitgevinkt: ${esc(state.reasons[path])}</span></div>` : "";
@@ -591,7 +794,7 @@ function renderKids(children, parentPath, depth, res) {
         <button class="btn small" data-action="reason-cancel">Annuleren</button>
       </div>` : "";
 
-    const breakdown = isOwner && state.openBreakdown.has(path)
+    const breakdown = hasOwnRows && state.openBreakdown.has(path)
       ? `<div style="padding-left:${indent + 13}px">${renderBreakdown(info)}</div>` : "";
 
     return `
@@ -601,13 +804,20 @@ function renderKids(children, parentPath, depth, res) {
             <input type="checkbox" data-action="toggle" data-path="${path}" data-verplicht="${c.verplicht}" ${on ? "checked" : ""}>
             <span class="name">${esc(part.naam)}</span>
           </label>
+          ${stepCount && !on ? `<span class="module">${stepCount} stappen</span>` : ""}
           <span class="tag">${c.verplicht ? "verplicht" : "optioneel"}</span>
+          ${flags.includes("o") ? `<span class="tag" title="AFAS markeert deze stap als optioneel">AFAS: optioneel</span>` : ""}
+          ${flags.includes("s") ? `<span class="tag" title="Alleen voor een bepaalde sector of regio">sectorspecifiek</span>` : ""}
+          ${flags.includes("k") ? `<span class="tag" title="Kies er één of meer uit">keuze</span>` : ""}
+          ${flags.includes("f") ? `<span class="tag" title="Een functie, geen inrichting">functie</span>` : ""}
           ${part.uitbreidingVan ? `<span class="tag">uitbreiding</span>` : ""}
           ${part.status === "concept" ? `<span class="tag concept" title="Nog niet tegen een bron gecontroleerd">concept</span>` : ""}
           ${elsewhere ? `<span class="tag shared">al meegenomen via ${esc(elsewhere)}</span>` : ""}
-          ${isOwner ? `<button class="linkbtn" data-action="breakdown" data-path="${path}" aria-expanded="${state.openBreakdown.has(path)}">${state.openBreakdown.has(path) ? "Opbouw verbergen" : "Opbouw"}</button>` : ""}
+          ${part.bron && depth === 1 ? `<a class="linkbtn" href="${esc(part.bron)}" target="_blank" rel="noopener" title="${esc(part.afasNaam ? "AFAS-pagina: " + part.afasNaam : "Bron op help.afas.nl")}">Bron</a>` : ""}
+          ${hasOwnRows ? `<button class="linkbtn" data-action="breakdown" data-path="${path}" aria-expanded="${state.openBreakdown.has(path)}">${state.openBreakdown.has(path) ? "Opbouw verbergen" : "Opbouw"}</button>` : ""}
           ${daysCell}
         </div>
+        ${part.omschrijving && on ? `<div class="inline-form" style="padding-left:${indent + 27}px"><span class="reason" style="color:var(--concept)">${esc(part.omschrijving)}</span></div>` : ""}
         ${pending}${reasonLine}${breakdown}
         ${on && part.kinderen ? `<ul class="kids">${renderKids(part.kinderen, path, depth + 1, res)}</ul>` : ""}
       </li>`;
@@ -647,6 +857,7 @@ function renderTree(res) {
             <span class="name">${esc(proc.naam)}</span>
           </label>
           <span class="module">${esc(proc.module)}</span>
+          ${proc.bron ? `<a class="linkbtn" href="${esc(proc.bron)}" target="_blank" rel="noopener">Bron</a>` : ""}
           ${on ? `<span class="days">${fmtDays(pp ? pp.days : 0)}</span>` : ""}
         </div>
         ${on ? renderQuestions(proc) + `<ul class="kids">${renderKids(proc.kinderen, proc.id, 1, res)}</ul>` : ""}
